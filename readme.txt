@@ -1,1 +1,1 @@
-I created git repo on github at 2013/12/5.
+Created git repo on github at 2013/12/5.
