@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 {
 	_finddata_t fd;
 
-	char srcStr[] =		"ooooooooooooooooooooooooooooooooooooo";	
+	char srcStr[] =		"oooooooooooooooooooooooooooooooooooo";	
 	char destStr[] =	"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
 
