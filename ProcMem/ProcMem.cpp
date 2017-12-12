@@ -1,7 +1,7 @@
 // ProcMem.cpp : Defines the entry point for the console application.
 //
 
-#include "stdafx.h"
+//#include "stdafx.h"
 #include <windows.h>
 #pragma comment( lib, "psapi.lib" )
 #include <Psapi.h>
@@ -11,7 +11,6 @@ typedef struct _Task
 {
 	char* process_name;
 	char* file_name;
-	bool exit;
 }TaskInfo;
 
 typedef TaskInfo* PTaskInfo;
@@ -34,7 +33,7 @@ int getProcMemoryUsage2( char* pProcessName, char* filename)
 	 if( !EnumProcesses(dwProcs , sizeof(dwProcs) , &dwNeeded  ))
 	 {
 		  //输出出错信息
-		  wsprintf( chBuf , TEXT("EnumProcesses Failed (%d).\n") , GetLastError() ) ;
+		  sprintf( chBuf , "EnumProcesses Failed (%d).\n" , GetLastError() ) ;
 		  return false;
 	 }
 
@@ -95,43 +94,27 @@ int getProcMemoryUsage(TaskInfo& task_info)
 	if (!fp_result)
 		return -1;
 
-	//系统命令tasklist重定向输出到临时文件
 	FILE* fp_tmp = fopen("tmp", "w");
 	fclose(fp_tmp);
-	sprintf(cmd, "tasklist /FI \"imagename eq %s\" >> tmp", task_info.process_name);
+	sprintf(cmd, "tasklist /FI \"IMAGENAME eq %s\" >> tmp", task_info.process_name);
 	system(cmd);
 
-	//从文件末尾读取需要的字符串
 	fp_tmp = fopen("tmp", "r");
-	fseek(fp_tmp,-12,SEEK_END);
-	fgets(result, 11, fp_tmp);
+	fseek(fp_tmp,-15,SEEK_END);
+	fgets(result, 14, fp_tmp);
 	fclose(fp_tmp);
-	DeleteFile("tmp");
 
 	SYSTEMTIME sys;
 	GetLocalTime( &sys );
-
-	if (strcmp(result, " criteria.") == 0)
-	{
-		if (!task_info.exit)
-		{
-			fprintf(fp_result, "%d-%02d-%02d %02d:%02d%:%02d\tProcess exited.\n",
-				sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond);
-		}
-		fclose(fp_result);
-		task_info.exit = true;
-		return 0;
-	}
-
-	task_info.exit = false;
-	fprintf(fp_result, "%d-%02d-%02d %02d:%02d%:%02d\t%s\n" ,
+	
+	fprintf(fp_result, "%d-%02d-%02d %02d:%02d%:%02d\t%sB\n" ,
 		sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond,
 		result);
 	fclose(fp_result);
 	return 0;
 }
 
-int _tmain(int argc, _TCHAR* argv[])
+int main(int argc, char* argv[])
 {
 	PTaskInfo task_list;
 	int task_num = 0;
@@ -141,9 +124,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		return -1;
 	}
-
 	// output
-	printf("开始每 %d 秒记录内存占用...", monitor_tick);
+	printf("monitoring every %d second...", monitor_tick);
 	while(1)
 	{
 		for(int i = 0; i<task_num; i++)
@@ -151,7 +133,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			getProcMemoryUsage(task_list[i]);
 		}
 
-		Sleep(monitor_tick * 1000);
+		Sleep(monitor_tick * 500);
 	}
 	return 0;
 }
@@ -197,7 +179,6 @@ bool LoadConfig(PTaskInfo &task_list, int &task_num, int &monitor_tick)
 			continue;
 		tmp[strlen(tmp) - 1] = 0; // delete '\n'
 
-		task_list[idx].exit = false;
 		task_list[idx].process_name = new char[strlen(tmp) + 1];
 		ZeroMemory(task_list[idx].process_name, strlen(tmp) + 1);
 		strcpy(task_list[idx].process_name, tmp);
